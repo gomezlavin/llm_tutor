@@ -37,8 +37,12 @@ config_key = "openai_gpt-4"
 # Get selected configuration
 config = configurations[config_key]
 
+from langsmith.wrappers import wrap_openai
+from langsmith import traceable
+
 # Initialize the OpenAI async client
-client = openai.AsyncClient(api_key=config["api_key"], base_url=config["endpoint_url"])
+# client = openai.AsyncClient(api_key=config["api_key"], base_url=config["endpoint_url"])
+client = wrap_openai(openai.AsyncClient(api_key=config["api_key"], base_url=config["endpoint_url"]))
 
 gen_kwargs = {
     "model": config["model"],
@@ -50,6 +54,7 @@ gen_kwargs = {
 ENABLE_SYSTEM_PROMPT = True
 ENABLE_CLASS_CONTEXT = True
 
+@traceable
 def get_latest_user_message(message_history):
     # Iterate through the message history in reverse to find the last user message
     for message in reversed(message_history):
@@ -57,6 +62,7 @@ def get_latest_user_message(message_history):
             return message['content']
     return None
 
+@traceable
 async def assess_message(message_history):
     file_path = "student_record.md"
     markdown_content = read_student_record(file_path)
@@ -109,6 +115,7 @@ async def assess_message(message_history):
     )
     write_student_record(file_path, updated_content)
 
+@traceable
 def parse_assessment_output(output):
     try:
         parsed_output = json.loads(output)
